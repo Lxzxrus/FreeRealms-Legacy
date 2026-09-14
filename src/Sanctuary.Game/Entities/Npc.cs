@@ -166,9 +166,11 @@ public class Npc : IScriptableNpc, IEntity
             Unknown = 0
         };
 
+        var data = Player.SerializeTunneled(packet);
+
         foreach (var visiblePlayer in VisiblePlayers)
         {
-            visiblePlayer.Value.SendTunneled(packet);
+            visiblePlayer.Value.SendSerialized(data);
         }
     }
 
