@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Threading;
 
@@ -41,34 +42,75 @@ public class BasicTest
         var serverManager = new TestManager(true, serverParams, serviceProvider);
         var clientManager = new TestManager(false, clientParams, serviceProvider);
 
-        var serverThread = new Thread(() => ServerLoop(serverManager));
-        var clientThread = new Thread(() => ClientLoop(clientManager));
+        var stop = new CancellationTokenSource();
+
+        Exception? serverError = null;
+        Exception? clientError = null;
+        var clientDisconnectReason = DisconnectReason.None;
+
+        var serverThread = new Thread(() =>
+        {
+            try
+            {
+                ServerLoop(serverManager, stop.Token);
+            }
+            catch (Exception ex)
+            {
+                serverError = ex;
+            }
+        })
+        {
+            IsBackground = true
+        };
+
+        var clientThread = new Thread(() =>
+        {
+            try
+            {
+                clientDisconnectReason = ClientLoop(clientManager, stop.Token);
+            }
+            catch (Exception ex)
+            {
+                clientError = ex;
+            }
+        })
+        {
+            IsBackground = true
+        };
 
         serverThread.Start();
         clientThread.Start();
 
-        while (serverThread.IsAlive && clientThread.IsAlive)
-        {
-        }
+        var clientFinished = clientThread.Join(TimeSpan.FromSeconds(30));
+
+        stop.Cancel();
+
+        serverThread.Join(TimeSpan.FromSeconds(5));
+        clientThread.Join(TimeSpan.FromSeconds(5));
+
+        Assert.IsTrue(clientFinished, "The client did not disconnect within 30 seconds.");
+        Assert.IsNull(serverError, $"The server thread threw: {serverError}");
+        Assert.IsNull(clientError, $"The client thread threw: {clientError}");
+        Assert.AreEqual(DisconnectReason.Application, clientDisconnectReason);
     }
 
-    private void ServerLoop(TestManager manager)
+    private void ServerLoop(TestManager manager, CancellationToken cancellationToken)
     {
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
             manager.GiveTime();
     }
 
-    private void ClientLoop(TestManager manager)
+    private DisconnectReason ClientLoop(TestManager manager, CancellationToken cancellationToken)
     {
         var connection = manager.EstablishConnection("127.0.0.1", 12345);
 
         if (connection is null)
-            return;
+            throw new InvalidOperationException("EstablishConnection returned null.");
 
-        while (connection.Status == Status.Negotiating)
+        while (connection.Status == Status.Negotiating && !cancellationToken.IsCancellationRequested)
             manager.GiveTime();
 
-        while (connection.Status != Status.Disconnected)
+        while (connection.Status != Status.Disconnected && !cancellationToken.IsCancellationRequested)
         {
             manager.GiveTime();
 
@@ -89,6 +131,6 @@ public class BasicTest
                 stats.SyncTheirReceived);
         }
 
-        Assert.AreEqual(DisconnectReason.Application, connection.DisconnectReason);
+        return connection.DisconnectReason;
     }
 }
