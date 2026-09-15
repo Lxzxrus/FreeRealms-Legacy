@@ -136,6 +136,7 @@ Before you can use this software, ensure you have the following installed:
         "Provider": "Sqlite",
         "ConnectionString": "Data Source=D:\\Games\\Free Realms\\sanctuary.db;"
     }
+    }
    ```
 5. Launch `Sanctuary.Login`, `Sanctuary.Gateway`
 6. Connect to the client
