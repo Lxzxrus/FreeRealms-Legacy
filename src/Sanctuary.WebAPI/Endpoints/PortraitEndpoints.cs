@@ -101,7 +101,7 @@ public static class PortraitEndpoints
 
             var savePath = Path.Combine(saveDirectory, fileName);
 
-            var fileLock = _fileLocks.GetOrAdd(savePath, new SemaphoreSlim(1, 1));
+            var fileLock = _fileLocks.GetOrAdd(savePath, _ => new SemaphoreSlim(1, 1));
 
             await fileLock.WaitAsync();
 
