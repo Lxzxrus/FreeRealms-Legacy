@@ -41,5 +41,7 @@ public interface IResourceManager
 
     RewardTableDefinitionCollection RewardTables { get; }
 
+    QuestDefinitionCollection Quests { get; }
+
     bool Load();
 }

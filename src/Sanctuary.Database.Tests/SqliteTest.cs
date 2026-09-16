@@ -30,4 +30,17 @@ public class SqliteTest : DatabaseTestBase
 
         Assert.IsTrue(await dbContext.Database.CanConnectAsync(TestContext.CancellationToken));
     }
+
+    /// <summary>
+    /// Catches an entity change that was never turned into a migration, and a migration whose model
+    /// snapshot was not kept in step with it.
+    /// </summary>
+    [TestMethod]
+    public async Task ModelMatchesTheLastMigrationAsync()
+    {
+        await using var dbContext = await CreateDbContextAsync(TestContext.CancellationToken);
+
+        Assert.IsFalse(dbContext.Database.HasPendingModelChanges(),
+            "The entity model and the last migration's snapshot disagree. Either a migration is missing, or its snapshot was not updated.");
+    }
 }
