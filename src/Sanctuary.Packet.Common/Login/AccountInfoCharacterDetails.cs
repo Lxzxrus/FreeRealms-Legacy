@@ -1,7 +1,6 @@
 ﻿using Sanctuary.Core.IO;
-using Sanctuary.Packet.Common;
 
-namespace Sanctuary.Game.Packet.Common;
+namespace Sanctuary.Packet.Common;
 
 public class AccountInfoCharacterDetails
 {
