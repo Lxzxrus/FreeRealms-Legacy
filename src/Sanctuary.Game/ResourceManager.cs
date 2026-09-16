@@ -53,6 +53,7 @@ public class ResourceManager : IResourceManager
     public static readonly string NameFilterFile = Path.Combine(BaseDirectory, "NameFilter.txt");
     public static readonly string MapsDirectory = Path.Combine(BaseDirectory, "Maps");
     public static readonly string RewardTablesFile = Path.Combine(BaseDirectory, "Rewards.json");
+    public static readonly string QuestsFile = Path.Combine(BaseDirectory, "Quests.json");
 
 
     public IdToStringLookup HairMappings { get; }
@@ -92,6 +93,8 @@ public class ResourceManager : IResourceManager
     public MapGraphCollection Maps { get; }
 
     public RewardTableDefinitionCollection RewardTables { get; }
+
+    public QuestDefinitionCollection Quests { get; }
 
     public ResourceManager(ILogger<ResourceManager> logger)
     {
@@ -140,6 +143,7 @@ public class ResourceManager : IResourceManager
         NameFilter = new(_logger);
         Maps = new(_logger);
         RewardTables = new(_logger);
+        Quests = new(_logger);
     }
 
     public bool Load()
@@ -290,6 +294,9 @@ public class ResourceManager : IResourceManager
         if (!Npcs.Load(NpcsFile))
             return false;
 
+        if (!Quests.Load(QuestsFile))
+            return false;
+
         if (!Maps.Load(MapsDirectory))
             return false;
 
@@ -376,6 +383,8 @@ public class ResourceManager : IResourceManager
                 loaded = NameFilter.Load(NameFilterFile);
             else if (e.FullPath == RewardTablesFile)
                 loaded = RewardTables.Load(RewardTablesFile);
+            else if (e.FullPath == QuestsFile)
+                loaded = Quests.Load(QuestsFile);
             else
                 _logger.LogWarning("Unknown file changed. File: {filepath}", e.FullPath);
 
