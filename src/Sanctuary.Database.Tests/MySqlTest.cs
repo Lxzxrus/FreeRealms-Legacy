@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +27,34 @@ public class MySqlTest : DatabaseTestBase
     [TestMethod]
     public async Task IsValidAsync()
     {
+        if (!IsMariaDbListening() && !IsContinuousIntegration())
+        {
+            Assert.Inconclusive("MariaDB isn't reachable on 127.0.0.1:3306, so this test is skipped outside CI.");
+        }
+
         await using var dbContext = await CreateDbContextAsync(TestContext.CancellationToken);
 
         await dbContext.Database.MigrateAsync(TestContext.CancellationToken);
 
         Assert.IsTrue(await dbContext.Database.CanConnectAsync(TestContext.CancellationToken));
+    }
+
+    private static bool IsMariaDbListening()
+    {
+        try
+        {
+            using var client = new TcpClient();
+
+            return client.ConnectAsync("127.0.0.1", 3306).Wait(TimeSpan.FromSeconds(1));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsContinuousIntegration()
+    {
+        return string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
     }
 }

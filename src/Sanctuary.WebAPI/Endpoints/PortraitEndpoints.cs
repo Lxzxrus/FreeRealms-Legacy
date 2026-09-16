@@ -25,7 +25,7 @@ public static class PortraitEndpoints
     {
         var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 
-        _logger = loggerFactory.CreateLogger(nameof(AuthEndpoints));
+        _logger = loggerFactory.CreateLogger(nameof(PortraitEndpoints));
 
         app.MapPost("/image", ImageHandlerAsync).DisableAntiforgery();
     }
