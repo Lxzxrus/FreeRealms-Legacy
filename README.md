@@ -12,7 +12,7 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![AGPL-3.0 License][license-shield]][license-url]
 
 
 
@@ -118,8 +118,12 @@ This repository only contains the **server emulator** for Free Realms. To play t
 
 Before you can use this software, ensure you have the following installed:
 
-- **Visual Studio 2022**  
-  Make sure to include the **.NET Framework development workload** during installation.
+- **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)**  
+  Needed to build the solution. `src/global.json` asks for version 10.0.100 or a later 10.0 release.
+- **[.NET 9 Runtime and ASP.NET Core 9 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)**  
+  Needed to run the servers, which target .NET 9. The .NET 10 SDK does not include them.
+- **Visual Studio 2026** (optional)  
+  The steps below use Visual Studio, but you can also build from a terminal by running `dotnet build` in the `src` folder. Visual Studio 2022 cannot load current .NET 10 SDKs.
 
 ### Release
 
@@ -128,7 +132,7 @@ Before you can use this software, ensure you have the following installed:
    git clone https://github.com/raisingkaines/FreeRealms-Legacy.git
    ```
 2. Build the solution for `Sanctuary.Core` for `Release`
-3. Create a file named `database.json` in the `Release` folder located within the new `bin` folder
+3. Create a file named `database.json` next to `Sanctuary.Login.exe` in its `bin\Release\net9.0` output folder, and another next to `Sanctuary.Gateway.exe`
 4. Paste the following
    ```json
     {
@@ -138,15 +142,16 @@ Before you can use this software, ensure you have the following installed:
     }
     }
    ```
-5. Launch `Sanctuary.Login`, `Sanctuary.Gateway`
-6. Connect to the client
+5. Create a file named `appsettings.Production.json` next to `Sanctuary.WebAPI.exe` with the same contents. The Web API needs its own copy because it does not read `database.json`
+6. Launch `Sanctuary.Login` first so that it can create the database, then `Sanctuary.Gateway` and `Sanctuary.WebAPI`. Start each server from its own output folder, since they load their `Resources` folder from the folder you start them in
+7. Connect to the client
 
 **_IMPORTANT:_** Update the Data Source file path (D:\\Games\\Free Realms\\sanctuary.db) to match the location where your database files are stored.
 
-**_NOTE:_** The following user should already exist, but if not then implement one with the following credentials:
+**_NOTE:_** A new database contains no accounts. Accounts are created through the Web API's `/register` endpoint; usernames are 3-50 characters long and passwords at least 6. To turn an account into an admin account, set the flag in the database and log in again:
 
-```sh
-1	admin	admin	EXmdPd5dbAcs58vZ0iCcPRtJkGdMePL2	10	0	1	1	2024-06-22 13:51:13.2736902+01:00	2024-07-14 01:57:45.8765645+00:00
+```sql
+UPDATE Users SET IsAdmin = 1 WHERE Username = 'your_username';
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -158,10 +163,7 @@ Before you can use this software, ensure you have the following installed:
    git clone https://github.com/raisingkaines/FreeRealms-Legacy.git
    ```
 2. Build the solution for `Sanctuary.Core` for `Debug`
-3. Right-Click **'Manage User Secrets'** for the following projects:
-   - `Sanctuary.Gateway`
-   - `Sanctuary.Login`
-   - `Sanctuary.Database`
+3. Right-Click **'Manage User Secrets'** on `Sanctuary.Login`. Every server project shares the same secrets file, so this covers `Sanctuary.Gateway` and `Sanctuary.WebAPI` as well
 
 4. Copy and paste the following configuration for **SQLite** into the secrets editor:
 
@@ -172,7 +174,8 @@ Before you can use this software, ensure you have the following installed:
        "ConnectionString": "Data Source=D:\\Games\\Free Realms\\sanctuary.db;"
      }
    }
-5. Launch `Sanctuary.Login`, `Sanctuary.Gateway`
+   ```
+5. Launch `Sanctuary.Login`, `Sanctuary.Gateway` and `Sanctuary.WebAPI`
 6. Connect to the client
 
 **_IMPORTANT:_** Update the Data Source file path (D:\\Games\\Free Realms\\sanctuary.db) to match the location where your database files are stored.
@@ -240,11 +243,11 @@ Don't forget to give the project a star! Thanks again!
 
 
 <!-- LICENSE -->
-<!-- ## License
+## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the GNU Affero General Public License v3.0. See [`LICENSE`](LICENSE) for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p> -->
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
