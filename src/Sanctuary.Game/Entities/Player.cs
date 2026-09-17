@@ -11,6 +11,7 @@ using Sanctuary.Core.Collections;
 using Sanctuary.Core.IO;
 using Sanctuary.Game.ChatCommands;
 using Sanctuary.Game.Helpers;
+using Sanctuary.Core.Helpers;
 using Sanctuary.Game.Interactions;
 using Sanctuary.Game.Zones;
 using Sanctuary.Packet;
@@ -18,6 +19,8 @@ using Sanctuary.Packet.Common;
 using Sanctuary.Packet.Common.Chat;
 using Sanctuary.UdpLibrary;
 using Sanctuary.UdpLibrary.Enumerations;
+
+using Sanctuary.Game.Resources.Definitions;
 
 namespace Sanctuary.Game.Entities;
 
@@ -43,6 +46,29 @@ public sealed class Player : ClientPcData, IEntity
     public bool IsAdmin { get; set; }
     public bool IsMod { get; set; }
     public ChatCommandRole ChatCommandRole => ChatHelper.GetRoleFromFlags(IsAdmin, IsMod);
+
+    // Quest state for this session. What survives a logout lives in CharacterQuests.
+    public Dictionary<int, bool> Quests { get; } = [];
+    public Dictionary<int, int> QuestGoalProgress { get; } = [];
+    public Dictionary<int, int> QuestCollectProgress { get; } = [];
+    public HashSet<ulong> TalkedQuestNpcs { get; } = [];
+
+    public Queue<QuestDialogueLine> PendingDialogue { get; } = new();
+    public ulong PendingDialogueNpcGuid { get; set; }
+    public ulong TalkingNpcGuid { get; set; }
+    public int TalkAnimationTicket { get; set; }
+
+    public int ActiveQuestId { get; set; }
+    public DateTime LastQuestAcceptedAt { get; set; }
+
+    // A queue rather than one slot, so two quests finishing together both get handed in.
+    public Queue<Action> PendingQuestEndActions { get; } = new();
+
+    /// <summary>This player's character row id, which the quest tables key on.</summary>
+    public ulong CharacterId => GuidHelper.GetPlayerId(Guid);
+
+    public ulong LastInteractNpcGuid { get; set; }
+    public DateTime LastInteractAt { get; set; }
     public DateTimeOffset? MutedUntil { get; set; }
 
     public ClientPcProfile ActiveProfile =>
@@ -674,4 +700,25 @@ public sealed class Player : ClientPcData, IEntity
         ZoneTile.Entities.Remove(Guid, out _);
         Zone.TryRemovePlayer(Guid);
     }
+
+    /// <summary>The "!" or "?" this npc should show this player, or its own icon.</summary>
+    public int GetNotificationImageId(Npc npc)
+    {
+        var quests = _resourceManager.Quests;
+
+        foreach (var questId in quests.QuestsOfferedBy(npc.Guid))
+        {
+            if (quests.TryGet(questId, out var offerable) && offerable.IsOfferableFor(Quests))
+                return offerable.NotificationAvailable;
+        }
+
+        foreach (var questId in quests.QuestsTargeting(npc.Guid))
+        {
+            if (Quests.TryGetValue(questId, out var completed) && !completed && quests.TryGet(questId, out var active))
+                return active.NotificationActive;
+        }
+
+        return npc.Notification?.IconId ?? 0;
+    }
+
 }
